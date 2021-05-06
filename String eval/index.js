@@ -1,14 +1,73 @@
 var calc = function (expression) {
+	let normalizedExpression = normlizeWhitespace(expression); //?
+
+	if (hasParas(normalizedExpression)) {
+		let mostNestedExpression = extractNestedParas(normalizedExpression);
+
+		const mostNestedPara = identifyMostNestedPara(normalizedExpression); //?
+
+		if (
+			isNegatedPara(normalizedExpression, mostNestedPara) &&
+			hasASignBeforeMinus(normalizedExpression, mostNestedPara)
+		) {
+			mostNestedExpression.mostNestedPara = mostNestedExpression.mostNestedPara
+				.split(" ")
+				.map(elt =>
+					!Number.isNaN(parseFloat(elt))
+						? (parseFloat(elt) * -1).toString()
+						: elt
+				)
+				.join(" ");
+
+			normalizedExpression = [
+				normalizedExpression.slice(0, mostNestedPara.index - 2),
+				...[` (${mostNestedExpression.mostNestedPara})`],
+			].join(" ");
+		}
+		normalizedExpression;
+
+		mostNestedExpression;
+
+		const tokenizedNestedExpression = tokenizeParaExp(mostNestedExpression);
+
+		const { tokens } = tokenizedNestedExpression;
+
+		const evaluatedNestedExpression = getSimpleExpressionResult(tokens);
+
+		const orginalExpWithoutMostNestedParas = swapEvaluatedParaExpressionWithResult(
+			normalizedExpression,
+			tokenizedNestedExpression,
+			evaluatedNestedExpression
+		);
+
+		return calc(orginalExpWithoutMostNestedParas);
+	}
+
+	const tokenizedExpWithoutParas = tokenizeSimpleExp(normalizedExpression);
+
+	const result = getSimpleExpressionResult(tokenizedExpWithoutParas);
+
+	normlizeWhitespace("12* 123 / - (-5 + (2 +-6-(8* -5.34)))"); //?
+
+	return parseFloat(result);
+
 	function normlizeWhitespace(exp) {
 		let normalized = exp.replace(/[\s]{2,}/gi, " ");
 
 		for (let i = 0; i < normalized.length; i++) {
-			if (normalized[i] === " " || normalized[i + 1] === " ") {
+			if (
+				normalized[i] === "(" ||
+				normalized[i] === " " ||
+				normalized[i + 1] === " "
+			) {
 				continue;
 			}
 
-			if (normalized[i] === "-" && parseFloat(normalized[i + 1])) {
-				if (parseFloat(normalized[i - 1])) {
+			if (
+				normalized[i] === "-" &&
+				!Number.isNaN(parseFloat(normalized[i + 1]))
+			) {
+				if (!Number.isNaN(parseFloat(normalized[i - 1]))) {
 					const indexToInsertWhitespace = i + 1;
 
 					normalized = [
@@ -18,7 +77,10 @@ var calc = function (expression) {
 					].join("");
 				}
 
-				if (normalized[i - 1] === " " && parseFloat(normalized[i - 2])) {
+				if (
+					normalized[i - 1] === " " &&
+					!Number.isNaN(parseFloat(normalized[i - 2]))
+				) {
 					const indexToInsertWhitespace = i + 1;
 
 					normalized = [
@@ -30,7 +92,8 @@ var calc = function (expression) {
 			}
 
 			if (
-				(parseFloat(normalized[i + 1]) && normalized[i] === "/") ||
+				(!Number.isNaN(parseFloat(normalized[i + 1])) &&
+					normalized[i] === "/") ||
 				normalized[i] === "+" ||
 				normalized[i] === "*"
 			) {
@@ -44,6 +107,7 @@ var calc = function (expression) {
 			}
 
 			if (
+				normalized[i + 1] === "(" ||
 				normalized[i + 1] === "/" ||
 				normalized[i + 1] === "+" ||
 				normalized[i + 1] === "*" ||
@@ -62,118 +126,98 @@ var calc = function (expression) {
 		return normalized;
 	}
 
-	function add(exp) {
-		return exp[0] + exp[2];
-	}
-
-	function subtract(exp) {
-		return exp[0] - exp[2];
-	}
-
-	function multiply(exp) {
-		return exp[0] * exp[2];
-	}
-
-	function divide(exp) {
-		return exp[0] / exp[2];
-	}
-
 	function hasParas(exp) {
 		return exp.includes("(");
 	}
 
-	function extractNestedParas(exp, originalExp = exp) {
+	function identifyMostNestedPara(exp) {
 		const tokens = exp.split("");
-		openParaIndex = tokens.indexOf("(");
-		closeParaIndex = tokens.lastIndexOf(")");
+		openParaIndex = tokens.lastIndexOf("(");
+		closeParaIndex = tokens.indexOf(")");
 
 		const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
 
-		if (pair.indexOf("(") === pair.lastIndexOf("("))
-			return {
-				mostNestedPara: pair
-					.join("")
-					.slice(1, pair.length - 1)
-					.trim(),
-				index: originalExp.indexOf(pair.join("")),
-				expressionLength: pair.join("").length,
-			};
-
-		pair.pop();
-
-		pair.shift();
-
-		return extractNestedParas(pair.join(""), exp);
+		return {
+			mostNestedPara: pair.join("").trim(),
+			index: exp.indexOf(pair.join("")),
+			expressionLength: pair.join("").length,
+		};
 	}
 
-	// function normalizeWhitespaceAfterDigitsPara(obj) {
-	// 	let normalized = obj.mostNestedPara;
+	// function identifyMostNestedPara_(exp, originalExp = exp) {
+	// 	const tokens = exp.split("");
+	// 	openParaIndex = tokens.indexOf("(");
+	// 	closeParaIndex = tokens.lastIndexOf(")");
 
-	// 	for (let i = 0; i < normalized.length; i++) {
-	// 		if (!parseFloat(normalized[i])) {
-	// 			continue;
-	// 		}
+	// 	const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
 
-	// 		if (normalized[i + 1] === " ") {
-	// 			continue;
-	// 		}
+	// 	if (pair.indexOf("(") === pair.lastIndexOf("("))
+	// 		return {
+	// 			mostNestedPara: pair.join(""),
+	// 			index: originalExp.indexOf(pair.join("")),
+	// 			expressionLength: pair.join("").length,
+	// 		};
 
-	// 		if (
-	// 			normalized[i + 1] === "/" ||
-	// 			normalized[i + 1] === "+" ||
-	// 			normalized[i + 1] === "*" ||
-	// 			normalized[i + 1] === "-"
-	// 		) {
-	// 			const indexToInsertWhitespace = i + 1;
+	// 	pair.pop();
 
-	// 			normalized = [
-	// 				normalized.slice(0, indexToInsertWhitespace),
-	// 				" ",
-	// 				normalized.slice(indexToInsertWhitespace),
-	// 			].join("");
-	// 		}
-	// 	}
+	// 	pair.shift();
 
-	// 	return {
-	// 		mostNestedPara: normalized,
-	// 		index: obj.index,
-	// 		expressionLength: obj.expressionLength,
-	// 	};
+	// 	return identifyMostNestedPara(pair.join(""), exp);
 	// }
 
-	// function normalizeWhitespaceAfterSignsPara(obj) {
-	// 	let normalized = obj.mostNestedPara;
+	function isNegatedPara(originalInputExpresion, { index }) {
+		return originalInputExpresion[index - 2] === "-";
+	}
 
-	// 	for (let i = 0; i < normalized.length; i++) {
-	// 		if (parseFloat(normalized[i])) {
-	// 			continue;
-	// 		}
+	function hasASignBeforeMinus(originalInputExpresion, { index }) {
+		return (
+			originalInputExpresion[index - 4] === "-" ||
+			originalInputExpresion[index - 4] === "+" ||
+			originalInputExpresion[index - 4] === "/" ||
+			originalInputExpresion[index - 4] === "*"
+		);
+	}
 
-	// 		if (normalized[i] === " " || normalized[i + 1] === " ") {
-	// 			continue;
-	// 		}
+	function extractNestedParas(exp) {
+		const tokens = exp.split("");
+		openParaIndex = tokens.lastIndexOf("(");
+		closeParaIndex = tokens.indexOf(")");
 
-	// 		if (
-	// 			normalized[i + 1] === "/" ||
-	// 			normalized[i + 1] === "+" ||
-	// 			normalized[i + 1] === "*" ||
-	// 			normalized[i + 1] === "-"
-	// 		) {
-	// 			const indexToInsertWhitespace = i + 1;
+		const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
 
-	// 			normalized = [
-	// 				normalized.slice(0, indexToInsertWhitespace),
-	// 				" ",
-	// 				normalized.slice(indexToInsertWhitespace),
-	// 			].join("");
-	// 		}
+		return {
+			mostNestedPara: pair
+				.slice(1, pair.length - 1)
+				.join("")
+				.trim(),
+			index: exp.indexOf(pair.join("")),
+			expressionLength: pair.join("").length,
+		};
+	}
+
+	// function extractNestedParas_(exp, originalExp = exp) {
+	// 	const tokens = exp.split("");
+	// 	openParaIndex = tokens.indexOf("(");
+	// 	closeParaIndex = tokens.lastIndexOf(")");
+
+	// 	const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
+
+	// 	if (pair.indexOf("(") === pair.lastIndexOf("(")) {
+	// 		return {
+	// 			mostNestedPara: pair
+	// 				.join("")
+	// 				.slice(1, pair.length - 1)
+	// 				.trim(),
+	// 			index: originalExp.indexOf(pair.join("")),
+	// 			expressionLength: pair.join("").length,
+	// 		};
 	// 	}
 
-	// 	return {
-	// 		mostNestedPara: normalized,
-	// 		index: obj.index,
-	// 		expressionLength: obj.expressionLength,
-	// 	};
+	// 	pair.pop();
+
+	// 	pair.shift();
+
+	// 	return extractNestedParas(pair.join(""), exp);
 	// }
 
 	function tokenizeParaExp(obj) {
@@ -186,24 +230,6 @@ var calc = function (expression) {
 
 	function tokenizeSimpleExp(exp) {
 		return exp.split(" ");
-	}
-
-	function executeMathOperation(tokensArr) {
-		const sign = tokensArr[1];
-		switch (sign) {
-			case "+": {
-				return add(tokensArr);
-			}
-			case "-": {
-				return subtract(tokensArr);
-			}
-			case "*": {
-				return multiply(tokensArr);
-			}
-			case "/": {
-				return divide(tokensArr);
-			}
-		}
 	}
 
 	function swapEvaluatedParaExpressionWithResult(
@@ -220,7 +246,7 @@ var calc = function (expression) {
 		].join("");
 	}
 
-	function getResult(tokenArray) {
+	function getSimpleExpressionResult(tokenArray) {
 		if (tokenArray.length === 1) return tokenArray[0];
 
 		if (tokenArray.includes("/") || tokenArray.includes("*")) {
@@ -253,7 +279,7 @@ var calc = function (expression) {
 
 			newTokenArray.splice(indexOfPrioritySign - 1, 3, newResult);
 
-			return getResult(newTokenArray);
+			return getSimpleExpressionResult(newTokenArray);
 		}
 
 		if (tokenArray.includes("+") || tokenArray.includes("-")) {
@@ -286,35 +312,46 @@ var calc = function (expression) {
 
 			newTokenArray.splice(indexOfNonPrioritySign - 1, 3, newResult);
 
-			return getResult(newTokenArray); //?
+			return getSimpleExpressionResult(newTokenArray); //?
+		}
+
+		function executeMathOperation(tokensArr) {
+			const sign = tokensArr[1];
+			switch (sign) {
+				case "+": {
+					return add(tokensArr);
+				}
+				case "-": {
+					return subtract(tokensArr);
+				}
+				case "*": {
+					return multiply(tokensArr);
+				}
+				case "/": {
+					return divide(tokensArr);
+				}
+			}
+
+			function add(exp) {
+				return parseFloat(exp[0]) + parseFloat(exp[2]);
+			}
+
+			function subtract(exp) {
+				return parseFloat(exp[0]) - parseFloat(exp[2]);
+			}
+
+			function multiply(exp) {
+				return parseFloat(exp[0]) * parseFloat(exp[2]);
+			}
+
+			function divide(exp) {
+				return parseFloat(exp[0]) / parseFloat(exp[2]);
+			}
 		}
 	}
-	const normalizedExpression = normlizeWhitespace(expression);
-
-	const example = extractNestedParas(normalizedExpression);
-
-	// const normalizedAfterDigits = normalizeWhitespaceAfterDigitsPara(example);
-
-	// const normalizedFinished = normalizeWhitespaceAfterSignsPara(
-	// 	normalizedAfterDigits
-	// );
-
-	const tokensWithMetaInfo = tokenizeParaExp(example);
-
-	const { tokens } = tokensWithMetaInfo;
-
-	const result = getResult(tokens); //?
-
-	const expressionWithoutFirstPara = swapEvaluatedParaExpressionWithResult(
-		expression,
-		tokensWithMetaInfo,
-		result
-	); //?
-
-	const rough = normlizeWhitespace("1-1"); //?
 };
 
-calc("2 / (2 + (3 - -1/-2 * -5.25)) * 4.33 - -6"); //?
+calc("2 /2+3 * 4.75- -6"); //?
 
 const tests = [
 	["1+1", 2],
