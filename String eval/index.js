@@ -18,20 +18,15 @@ var calc = function (expression) {
 					].join("");
 				}
 
-				// if (
-				// 	(normalized[i - 1] === " " && normalized[i - 2] === "/") ||
-				// 	normalized[i - 2] === "*" ||
-				// 	normalized[i - 2] === "+" //||
-				// 	//normalized[i - 2] === "-"
-				// ) {
-				// 	const indexToInsertWhitespace = i + 1;
+				if (normalized[i - 1] === " " && parseFloat(normalized[i - 2])) {
+					const indexToInsertWhitespace = i + 1;
 
-				// 	normalized = [
-				// 		normalized.slice(0, indexToInsertWhitespace),
-				// 		" ",
-				// 		normalized.slice(indexToInsertWhitespace),
-				// 	].join("");
-				// }
+					normalized = [
+						normalized.slice(0, indexToInsertWhitespace),
+						" ",
+						normalized.slice(indexToInsertWhitespace),
+					].join("");
+				}
 			}
 
 			if (
