@@ -1,10 +1,10 @@
-var calc = function (expression) {
-	let normalizedExpression = normlizeWhitespace(expression); //?
+const calc = function (expression) {
+	let normalizedExpression = normlizeWhitespace(expression);
 
 	if (hasParas(normalizedExpression)) {
 		let mostNestedExpression = extractNestedParas(normalizedExpression);
 
-		const mostNestedPara = identifyMostNestedPara(normalizedExpression); //?
+		const mostNestedPara = identifyMostNestedPara(normalizedExpression);
 
 		if (
 			isNegatedPara(normalizedExpression, mostNestedPara) &&
@@ -19,14 +19,18 @@ var calc = function (expression) {
 				)
 				.join(" ");
 
+			mostNestedExpression.index -= 2;
+
+			mostNestedExpression.expressionLength += 3;
+
 			normalizedExpression = [
 				normalizedExpression.slice(0, mostNestedPara.index - 2),
 				...[` (${mostNestedExpression.mostNestedPara})`],
+				normalizedExpression.slice(
+					mostNestedPara.index + mostNestedPara.expressionLength
+				),
 			].join(" ");
 		}
-		normalizedExpression;
-
-		mostNestedExpression;
 
 		const tokenizedNestedExpression = tokenizeParaExp(mostNestedExpression);
 
@@ -46,8 +50,6 @@ var calc = function (expression) {
 	const tokenizedExpWithoutParas = tokenizeSimpleExp(normalizedExpression);
 
 	const result = getSimpleExpressionResult(tokenizedExpWithoutParas);
-
-	normlizeWhitespace("12* 123 / - (-5 + (2 +-6-(8* -5.34)))"); //?
 
 	return parseFloat(result);
 
@@ -123,65 +125,18 @@ var calc = function (expression) {
 			}
 		}
 
-		return normalized;
+		return normalized.trim();
 	}
 
 	function hasParas(exp) {
 		return exp.includes("(");
 	}
 
-	function identifyMostNestedPara(exp) {
-		const tokens = exp.split("");
-		openParaIndex = tokens.lastIndexOf("(");
-		closeParaIndex = tokens.indexOf(")");
-
-		const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
-
-		return {
-			mostNestedPara: pair.join("").trim(),
-			index: exp.indexOf(pair.join("")),
-			expressionLength: pair.join("").length,
-		};
-	}
-
-	// function identifyMostNestedPara_(exp, originalExp = exp) {
-	// 	const tokens = exp.split("");
-	// 	openParaIndex = tokens.indexOf("(");
-	// 	closeParaIndex = tokens.lastIndexOf(")");
-
-	// 	const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
-
-	// 	if (pair.indexOf("(") === pair.lastIndexOf("("))
-	// 		return {
-	// 			mostNestedPara: pair.join(""),
-	// 			index: originalExp.indexOf(pair.join("")),
-	// 			expressionLength: pair.join("").length,
-	// 		};
-
-	// 	pair.pop();
-
-	// 	pair.shift();
-
-	// 	return identifyMostNestedPara(pair.join(""), exp);
-	// }
-
-	function isNegatedPara(originalInputExpresion, { index }) {
-		return originalInputExpresion[index - 2] === "-";
-	}
-
-	function hasASignBeforeMinus(originalInputExpresion, { index }) {
-		return (
-			originalInputExpresion[index - 4] === "-" ||
-			originalInputExpresion[index - 4] === "+" ||
-			originalInputExpresion[index - 4] === "/" ||
-			originalInputExpresion[index - 4] === "*"
-		);
-	}
-
 	function extractNestedParas(exp) {
 		const tokens = exp.split("");
 		openParaIndex = tokens.lastIndexOf("(");
-		closeParaIndex = tokens.indexOf(")");
+		closeParaIndex =
+			[...tokens.slice(openParaIndex)].indexOf(")") + openParaIndex;
 
 		const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
 
@@ -195,30 +150,33 @@ var calc = function (expression) {
 		};
 	}
 
-	// function extractNestedParas_(exp, originalExp = exp) {
-	// 	const tokens = exp.split("");
-	// 	openParaIndex = tokens.indexOf("(");
-	// 	closeParaIndex = tokens.lastIndexOf(")");
+	function identifyMostNestedPara(exp) {
+		const tokens = exp.split("");
+		openParaIndex = tokens.lastIndexOf("(");
+		closeParaIndex =
+			[...tokens.slice(openParaIndex)].indexOf(")") + openParaIndex;
 
-	// 	const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
+		const pair = tokens.slice(openParaIndex, closeParaIndex + 1);
 
-	// 	if (pair.indexOf("(") === pair.lastIndexOf("(")) {
-	// 		return {
-	// 			mostNestedPara: pair
-	// 				.join("")
-	// 				.slice(1, pair.length - 1)
-	// 				.trim(),
-	// 			index: originalExp.indexOf(pair.join("")),
-	// 			expressionLength: pair.join("").length,
-	// 		};
-	// 	}
+		return {
+			mostNestedPara: pair.join("").trim(),
+			index: exp.indexOf(pair.join("")),
+			expressionLength: pair.join("").length,
+		};
+	}
 
-	// 	pair.pop();
+	function isNegatedPara(originalInputExpresion, { index }) {
+		return originalInputExpresion[index - 2] === "-";
+	}
 
-	// 	pair.shift();
-
-	// 	return extractNestedParas(pair.join(""), exp);
-	// }
+	function hasASignBeforeMinus(originalInputExpresion, { index }) {
+		return (
+			originalInputExpresion[index - 4] === "-" ||
+			originalInputExpresion[index - 4] === "+" ||
+			originalInputExpresion[index - 4] === "/" ||
+			originalInputExpresion[index - 4] === "*"
+		);
+	}
 
 	function tokenizeParaExp(obj) {
 		return {
@@ -239,15 +197,25 @@ var calc = function (expression) {
 	) {
 		const stringResult = result.toString();
 
-		return [
+		const expWithSwappedResult = [
 			originalInputExpresion.slice(0, index),
 			stringResult,
 			originalInputExpresion.slice(index + expressionLength),
 		].join("");
+
+		return expWithSwappedResult;
+	}
+
+	function isSingleNegatedDigit(tokenArray) {
+		return tokenArray.length === 2 && tokenArray[0] === "-";
 	}
 
 	function getSimpleExpressionResult(tokenArray) {
 		if (tokenArray.length === 1) return tokenArray[0];
+
+		if (isSingleNegatedDigit(tokenArray)) {
+			return (parseFloat(tokenArray[1]) * -1).toString();
+		}
 
 		if (tokenArray.includes("/") || tokenArray.includes("*")) {
 			let indexOfPrioritySign;
@@ -351,16 +319,6 @@ var calc = function (expression) {
 	}
 };
 
-calc("2 /2+3 * 4.75- -6"); //?
-
-const tests = [
-	["1+1", 2],
-	["1 - 1", 0],
-	["1* 1", 1],
-	["1 /1", 1],
-	["-123", -123],
-	["123", 123],
-	["2 /2+3 * 4.75- -6", 21.25],
-	["12* 123", 1476],
-	["2 / (2 + 3) * 4.33 - -6", 7.732],
-];
+calc("(1 - 2) + - (- (- (-4)))"); //?
+calc("(2+1)*2 / (2 + (3 --(8+3))*7) * 4.33 - -6"); //?
+calc("(1 - 2) + - (- 4)"); //?
