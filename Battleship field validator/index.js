@@ -9,44 +9,48 @@ function validateBattlefield(field) {
 		const row = field[i];
 
 		for (let j = 0; j < row.length; j++) {
-			if (hasAdjustentCellAcross(i, j)) {
+			if (hasAdjustentNodeZAxis(i, j)) {
 				return false;
 			}
 		}
 	}
 
-	let shipStartCoords = getShipStartCoords(field);
+	let unusedStartCoords = getShipStartCoords(field);
 
-	while (shipStartCoords) {
+	while (unusedStartCoords) {
 		if (
-			hasMoreThanOneBranch(
-				shipStartCoords.shipStartY,
-				shipStartCoords.shipStartX
+			hasMoreThanOneAdjustentNode(
+				unusedStartCoords.shipStartY,
+				unusedStartCoords.shipStartX
 			)
 		) {
 			return false;
 		}
 
-		if (isSubmarine(shipStartCoords)) {
+		if (isSubmarine(unusedStartCoords)) {
 			recordShipOfLength(1);
-			shipStartCoords = getShipStartCoords(field);
+			unusedStartCoords = getShipStartCoords(field);
 			continue;
 		}
 
-		const shipDirection = getShipDirection(shipStartCoords);
+		const shipDirection = getShipDirection(unusedStartCoords);
 
 		let shipLength = 1;
 
-		let previousNodeCoords;
+		let currentNodeCoords;
 
 		let nextNodeCoords = getNextNodeCoords(
-			{ shipY: shipStartCoords.shipStartY, shipX: shipStartCoords.shipStartX },
+			{
+				shipY: unusedStartCoords.shipStartY,
+				shipX: unusedStartCoords.shipStartX,
+			},
 			shipDirection
 		);
 
 		while (field[nextNodeCoords.shipY][nextNodeCoords.shipX] !== 0) {
-			if (hasMoreThanTwoBranches(nextNodeCoords.shipY, nextNodeCoords.shipX)) {
-				// -> TWO
+			if (
+				hasMoreThanTwoAdjustentNodes(nextNodeCoords.shipY, nextNodeCoords.shipX)
+			) {
 				return false;
 			}
 
@@ -54,25 +58,26 @@ function validateBattlefield(field) {
 
 			shipLength++;
 
-			previousNodeCoords = { ...nextNodeCoords };
+			currentNodeCoords = { ...nextNodeCoords };
 
 			nextNodeCoords = getNextNodeCoords(
-				{ shipY: previousNodeCoords.shipY, shipX: previousNodeCoords.shipX },
+				{ shipY: currentNodeCoords.shipY, shipX: currentNodeCoords.shipX },
 				shipDirection
 			);
 		}
 
 		if (
-			hasMoreThanOneBranch(previousNodeCoords.shipY, previousNodeCoords.shipX)
+			hasMoreThanOneAdjustentNode(
+				currentNodeCoords.shipY,
+				currentNodeCoords.shipX
+			)
 		) {
 			return false;
 		}
 
 		recordShipOfLength(shipLength);
 
-		shipStartCoords = getShipStartCoords(field);
-
-		//break;
+		unusedStartCoords = getShipStartCoords(field);
 	}
 
 	return containsCorrectShips(correctShips, recordedShips);
@@ -85,8 +90,6 @@ function validateBattlefield(field) {
 
 			const shipStartY = i;
 
-			//let shipStartX = -1;
-
 			for (let j = 0; j < row.length; j++) {
 				if (row[j] === 1 && areFoundCoordsUnused(existingShipCoords, i, j)) {
 					const shipStartX = j;
@@ -96,22 +99,6 @@ function validateBattlefield(field) {
 					return { shipStartY, shipStartX };
 				}
 			}
-			// const shipStartX = row.indexOf(
-			// 	row.find(
-			// 		(elt, index) =>
-			// 			elt === 1 && areFoundCoordsUnused(existingShipCoords, i, index)
-			// 	)
-			// );
-
-			// if (
-			// 	shipStartX !== -1
-			// 	// &&
-			// 	// areFoundCoordsUnused(existingShipCoords, shipStartY, shipStartX)
-			// ) {
-			// 	markCoordsAsUsed(shipStartY, shipStartX);
-
-			// 	return { shipStartY, shipStartX };
-			// }
 		}
 
 		return null;
@@ -134,17 +121,10 @@ function validateBattlefield(field) {
 	}
 
 	function isSubmarine({ shipStartY, shipStartX }) {
-		// const left = field[shipStartY]?.[shipStartX - 1];
-		// const right = field[shipStartY]?.[shipStartX + 1];
-		// const up = field[shipStartY - 1]?.[shipStartX];
-		// const down = field[shipStartY + 1]?.[shipStartX];
-
-		const left = field[shipStartY] ? field[shipStartY][shipStartX - 1] : null;
-		const right = field[shipStartY] ? field[shipStartY][shipStartX + 1] : null;
-		const up = field[shipStartY - 1] ? field[shipStartY - 1][shipStartX] : null;
-		const down = field[shipStartY + 1]
-			? field[shipStartY + 1][shipStartX]
-			: null;
+		const { left, right, up, down } = getAdjustentNodesXandYAxes(
+			shipStartY,
+			shipStartX
+		);
 
 		const sum = +!!left + +!!right + +!!up + +!!down;
 
@@ -156,13 +136,9 @@ function validateBattlefield(field) {
 	}
 
 	function getShipDirection({ shipStartY, shipStartX }) {
-		//const left = !!field[shipStartY]?.[shipStartX - 1];
-		//const right = !!field[shipStartY]?.[shipStartX + 1];
 		const right = !!field[shipStartY]
 			? field[shipStartY][shipStartX + 1]
 			: null;
-		//const up = !!field[shipStartY - 1]?.[shipStartX];
-		//const down = !!field[shipStartY + 1]?.[shipStartX];
 
 		return right ? "right" : "down";
 	}
@@ -183,12 +159,6 @@ function validateBattlefield(field) {
 		}
 	}
 
-	// function isShipEnd({ shipY, shipX }) {
-	// 	return field[shipY]?.[shipX] === 0;
-	// }
-
-	//function getSubseqentShipNodesCoords({ shipY, shipX, direction }, field) {}
-
 	function areFoundCoordsUnused(existingShipCoords, checkedY, checkedX) {
 		return !existingShipCoords.some(
 			({ existingShipStartY, existingShipStartX }) =>
@@ -196,43 +166,24 @@ function validateBattlefield(field) {
 		);
 	}
 
-	function hasMoreThanOneBranch(cellY, cellX) {
-		// const left = field[cellY]?.[cellX - 1];
-		// const right = field[cellY]?.[cellX + 1];
-		// const up = field[cellY - 1]?.[cellX];
-		// const down = field[cellY + 1]?.[cellX];
-		const left = field[cellY] ? field[cellY][cellX - 1] : null;
-		const right = field[cellY] ? field[cellY][cellX + 1] : null;
-		const up = field[cellY - 1] ? field[cellY - 1][cellX] : null;
-		const down = field[cellY + 1] ? field[cellY + 1][cellX] : null;
+	function hasMoreThanOneAdjustentNode(cellY, cellX) {
+		const { left, right, up, down } = getAdjustentNodesXandYAxes(cellY, cellX);
 
 		const sum = +!!left + +!!right + +!!up + +!!down;
 
 		return sum > 1;
 	}
 
-	function hasMoreThanTwoBranches(cellY, cellX) {
-		// const left = field[cellY]?.[cellX - 1];
-		// const right = field[cellY]?.[cellX + 1];
-		// const up = field[cellY - 1]?.[cellX];
-		// const down = field[cellY + 1]?.[cellX];
-		const left = field[cellY] ? field[cellY][cellX - 1] : null;
-		const right = field[cellY] ? field[cellY][cellX + 1] : null;
-		const up = field[cellY - 1] ? field[cellY - 1][cellX] : null;
-		const down = field[cellY + 1] ? field[cellY + 1][cellX] : null;
+	function hasMoreThanTwoAdjustentNodes(cellY, cellX) {
+		const { left, right, up, down } = getAdjustentNodesXandYAxes(cellY, cellX);
 
 		const sum = +!!left + +!!right + +!!up + +!!down;
 
 		return sum > 2;
 	}
 
-	function hasAdjustentCellAcross(cellY, cellX) {
+	function hasAdjustentNodeZAxis(cellY, cellX) {
 		if (!field[cellY][cellX]) return false;
-
-		// const upperLeft = field[cellY - 1]?.[cellX - 1];
-		// const upperRight = field[cellY - 1]?.[cellX + 1];
-		// const lowerLeft = field[cellY + 1]?.[cellX - 1];
-		// const lowerRight = field[cellY + 1]?.[cellX + 1];
 
 		const upperLeft = field[cellY - 1] ? field[cellY - 1][cellX - 1] : null;
 		const upperRight = field[cellY - 1] ? field[cellY - 1][cellX + 1] : null;
@@ -240,6 +191,15 @@ function validateBattlefield(field) {
 		const lowerRight = field[cellY + 1] ? field[cellY + 1][cellX + 1] : null;
 
 		return !!upperLeft || !!upperRight || !!lowerLeft || !!lowerRight;
+	}
+
+	function getAdjustentNodesXandYAxes(cellY, cellX) {
+		const left = field[cellY] ? field[cellY][cellX - 1] : null;
+		const right = field[cellY] ? field[cellY][cellX + 1] : null;
+		const up = field[cellY - 1] ? field[cellY - 1][cellX] : null;
+		const down = field[cellY + 1] ? field[cellY + 1][cellX] : null;
+
+		return { left, right, up, down };
 	}
 }
 
