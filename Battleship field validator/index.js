@@ -134,10 +134,17 @@ function validateBattlefield(field) {
 	}
 
 	function isSubmarine({ shipStartY, shipStartX }) {
-		const left = field[shipStartY]?.[shipStartX - 1];
-		const right = field[shipStartY]?.[shipStartX + 1];
-		const up = field[shipStartY - 1]?.[shipStartX];
-		const down = field[shipStartY + 1]?.[shipStartX];
+		// const left = field[shipStartY]?.[shipStartX - 1];
+		// const right = field[shipStartY]?.[shipStartX + 1];
+		// const up = field[shipStartY - 1]?.[shipStartX];
+		// const down = field[shipStartY + 1]?.[shipStartX];
+
+		const left = field[shipStartY] ? field[shipStartY][shipStartX - 1] : null;
+		const right = field[shipStartY] ? field[shipStartY][shipStartX + 1] : null;
+		const up = field[shipStartY - 1] ? field[shipStartY - 1][shipStartX] : null;
+		const down = field[shipStartY + 1]
+			? field[shipStartY + 1][shipStartX]
+			: null;
 
 		const sum = +!!left + +!!right + +!!up + +!!down;
 
@@ -150,7 +157,10 @@ function validateBattlefield(field) {
 
 	function getShipDirection({ shipStartY, shipStartX }) {
 		//const left = !!field[shipStartY]?.[shipStartX - 1];
-		const right = !!field[shipStartY]?.[shipStartX + 1];
+		//const right = !!field[shipStartY]?.[shipStartX + 1];
+		const right = !!field[shipStartY]
+			? field[shipStartY][shipStartX + 1]
+			: null;
 		//const up = !!field[shipStartY - 1]?.[shipStartX];
 		//const down = !!field[shipStartY + 1]?.[shipStartX];
 
@@ -187,10 +197,14 @@ function validateBattlefield(field) {
 	}
 
 	function hasMoreThanOneBranch(cellY, cellX) {
-		const left = field[cellY]?.[cellX - 1];
-		const right = field[cellY]?.[cellX + 1];
-		const up = field[cellY - 1]?.[cellX];
-		const down = field[cellY + 1]?.[cellX];
+		// const left = field[cellY]?.[cellX - 1];
+		// const right = field[cellY]?.[cellX + 1];
+		// const up = field[cellY - 1]?.[cellX];
+		// const down = field[cellY + 1]?.[cellX];
+		const left = field[cellY] ? field[cellY][cellX - 1] : null;
+		const right = field[cellY] ? field[cellY][cellX + 1] : null;
+		const up = field[cellY - 1] ? field[cellY - 1][cellX] : null;
+		const down = field[cellY + 1] ? field[cellY + 1][cellX] : null;
 
 		const sum = +!!left + +!!right + +!!up + +!!down;
 
@@ -198,10 +212,14 @@ function validateBattlefield(field) {
 	}
 
 	function hasMoreThanTwoBranches(cellY, cellX) {
-		const left = field[cellY]?.[cellX - 1];
-		const right = field[cellY]?.[cellX + 1];
-		const up = field[cellY - 1]?.[cellX];
-		const down = field[cellY + 1]?.[cellX];
+		// const left = field[cellY]?.[cellX - 1];
+		// const right = field[cellY]?.[cellX + 1];
+		// const up = field[cellY - 1]?.[cellX];
+		// const down = field[cellY + 1]?.[cellX];
+		const left = field[cellY] ? field[cellY][cellX - 1] : null;
+		const right = field[cellY] ? field[cellY][cellX + 1] : null;
+		const up = field[cellY - 1] ? field[cellY - 1][cellX] : null;
+		const down = field[cellY + 1] ? field[cellY + 1][cellX] : null;
 
 		const sum = +!!left + +!!right + +!!up + +!!down;
 
@@ -211,10 +229,15 @@ function validateBattlefield(field) {
 	function hasAdjustentCellAcross(cellY, cellX) {
 		if (!field[cellY][cellX]) return false;
 
-		const upperLeft = field[cellY - 1]?.[cellX - 1];
-		const upperRight = field[cellY - 1]?.[cellX + 1];
-		const lowerLeft = field[cellY + 1]?.[cellX - 1];
-		const lowerRight = field[cellY + 1]?.[cellX + 1];
+		// const upperLeft = field[cellY - 1]?.[cellX - 1];
+		// const upperRight = field[cellY - 1]?.[cellX + 1];
+		// const lowerLeft = field[cellY + 1]?.[cellX - 1];
+		// const lowerRight = field[cellY + 1]?.[cellX + 1];
+
+		const upperLeft = field[cellY - 1] ? field[cellY - 1][cellX - 1] : null;
+		const upperRight = field[cellY - 1] ? field[cellY - 1][cellX + 1] : null;
+		const lowerLeft = field[cellY + 1] ? field[cellY + 1][cellX - 1] : null;
+		const lowerRight = field[cellY + 1] ? field[cellY + 1][cellX + 1] : null;
 
 		return !!upperLeft || !!upperRight || !!lowerLeft || !!lowerRight;
 	}
