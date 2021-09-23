@@ -1,6 +1,5 @@
-import closestPair from ".";
+import closestPair, { getDistance } from ".";
 import { Point } from "./customTypes";
-import "./jest-matchers/toEqualPoints";
 
 const testPoints: Point[] = [
   [2, 2], // A
@@ -29,6 +28,16 @@ expect.extend({
   },
 });
 
-it("returns unmodified array", () => {
-  expect(closestPair(testPoints)).toEqual(testPoints);
+describe("getDistance tests", () => {
+  it("Tests if the function works for points with same X coordinate", () => {
+    expect(getDistance([1, 2], [1, 5])).toBe(3);
+  });
+
+  it("Tests if the function works for points with same Y coordinate", () => {
+    expect(getDistance([7, 5], [18, 5])).toBe(11);
+  });
+
+  it("Tests if the function works for points with different X and Y coordinates", () => {
+    expect(getDistance([2, -6], [7, 3])).toBe(Math.sqrt(106));
+  });
 });
