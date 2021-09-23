@@ -1,4 +1,4 @@
-import closestPair, { getDistance } from ".";
+import closestPair, { getDistance } from "./index";
 import { Point } from "./customTypes";
 
 const testPoints: Point[] = [
